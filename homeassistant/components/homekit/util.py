@@ -1,7 +1,10 @@
 """Collection of useful functions for the HomeKit component."""
 from collections import OrderedDict, namedtuple
+import io
 import logging
+import secrets
 
+import pyqrcode
 import voluptuous as vol
 
 from homeassistant.components import fan, media_player, sensor
@@ -27,6 +30,8 @@ from .const import (
     FEATURE_PLAY_STOP,
     FEATURE_TOGGLE_MUTE,
     HOMEKIT_NOTIFY_ID,
+    HOMEKIT_PAIRING_QR,
+    HOMEKIT_PAIRING_QR_SECRET,
     TYPE_FAUCET,
     TYPE_OUTLET,
     TYPE_SHOWER,
@@ -102,9 +107,7 @@ def validate_entity_config(values):
         domain, _ = split_entity_id(entity)
 
         if not isinstance(config, dict):
-            raise vol.Invalid(
-                "The configuration for {} must be a dictionary.".format(entity)
-            )
+            raise vol.Invalid(f"The configuration for {entity} must be a dictionary.")
 
         if domain in ("alarm_control_panel", "lock"):
             config = CODE_SCHEMA(config)
@@ -207,13 +210,24 @@ class HomeKitSpeedMapping:
         return list(self.speed_ranges.keys())[0]
 
 
-def show_setup_message(hass, pincode):
+def show_setup_message(hass, pincode, uri):
     """Display persistent notification with setup information."""
     pin = pincode.decode()
     _LOGGER.info("Pincode: %s", pin)
+
+    buffer = io.BytesIO()
+    url = pyqrcode.create(uri)
+    url.svg(buffer, scale=5)
+    pairing_secret = secrets.token_hex(32)
+
+    hass.data[HOMEKIT_PAIRING_QR] = buffer.getvalue()
+    hass.data[HOMEKIT_PAIRING_QR_SECRET] = pairing_secret
+
     message = (
-        "To set up Home Assistant in the Home App, enter the "
-        "following code:\n### {}".format(pin)
+        f"To set up Home Assistant in the Home App, "
+        f"scan the QR code or enter the following code:\n"
+        f"### {pin}\n"
+        f"![image](/api/homekit/pairingqr?{pairing_secret})"
     )
     hass.components.persistent_notification.create(
         message, "HomeKit Setup", HOMEKIT_NOTIFY_ID

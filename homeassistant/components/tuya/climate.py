@@ -23,6 +23,8 @@ from . import DATA_TUYA, TuyaDevice
 
 DEVICE_TYPE = "climate"
 
+PARALLEL_UPDATES = 0
+
 HA_STATE_TO_TUYA = {
     HVAC_MODE_AUTO: "auto",
     HVAC_MODE_COOL: "cold",
@@ -122,7 +124,7 @@ class TuyaClimateDevice(TuyaDevice, ClimateDevice):
     @property
     def fan_modes(self):
         """Return the list of available fan modes."""
-        return self.tuya.fan_modes()
+        return self.tuya.fan_list()
 
     def set_temperature(self, **kwargs):
         """Set new target temperature."""
