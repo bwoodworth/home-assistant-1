@@ -6,6 +6,7 @@ from zlib import adler32
 import voluptuous as vol
 
 from homeassistant.components import cover
+from homeassistant.components.cover import DEVICE_CLASS_GARAGE, DEVICE_CLASS_GATE
 from homeassistant.components.media_player import DEVICE_CLASS_TV
 from homeassistant.const import (
     ATTR_DEVICE_CLASS,
@@ -23,6 +24,7 @@ from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP,
     TEMP_CELSIUS,
     TEMP_FAHRENHEIT,
+    UNIT_PERCENTAGE,
 )
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entityfilter import FILTER_SCHEMA
@@ -45,8 +47,8 @@ from .const import (
     DEVICE_CLASS_PM25,
     DOMAIN,
     HOMEKIT_FILE,
-    SERVICE_HOMEKIT_START,
     SERVICE_HOMEKIT_RESET_ACCESSORY,
+    SERVICE_HOMEKIT_START,
     TYPE_FAUCET,
     TYPE_OUTLET,
     TYPE_SHOWER,
@@ -54,7 +56,6 @@ from .const import (
     TYPE_SWITCH,
     TYPE_VALVE,
 )
-
 from .util import (
     show_setup_message,
     validate_entity_config,
@@ -200,7 +201,7 @@ def get_accessory(hass, driver, state, aid, config):
         device_class = state.attributes.get(ATTR_DEVICE_CLASS)
         features = state.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
 
-        if device_class == "garage" and features & (
+        if device_class in (DEVICE_CLASS_GARAGE, DEVICE_CLASS_GATE) and features & (
             cover.SUPPORT_OPEN | cover.SUPPORT_CLOSE
         ):
             a_type = "GarageDoorOpener"
@@ -237,7 +238,7 @@ def get_accessory(hass, driver, state, aid, config):
             TEMP_FAHRENHEIT,
         ):
             a_type = "TemperatureSensor"
-        elif device_class == DEVICE_CLASS_HUMIDITY and unit == "%":
+        elif device_class == DEVICE_CLASS_HUMIDITY and unit == UNIT_PERCENTAGE:
             a_type = "HumiditySensor"
         elif device_class == DEVICE_CLASS_PM25 or DEVICE_CLASS_PM25 in state.entity_id:
             a_type = "AirQualitySensor"
@@ -329,7 +330,7 @@ class HomeKit:
             aid = generate_aid(entity_id)
             if aid not in self.bridge.accessories:
                 _LOGGER.warning(
-                    "Could not reset accessory. entity_id " "not found %s", entity_id
+                    "Could not reset accessory. entity_id not found %s", entity_id
                 )
                 continue
             acc = self.remove_bridge_accessory(aid)
@@ -363,7 +364,7 @@ class HomeKit:
             return
         self.status = STATUS_WAIT
 
-        from . import (  # noqa: F401 pylint: disable=unused-import
+        from . import (  # noqa: F401 pylint: disable=unused-import, import-outside-toplevel
             type_covers,
             type_fans,
             type_lights,

@@ -236,9 +236,7 @@ class CloudRegisterView(HomeAssistantView):
         cloud = hass.data[DOMAIN]
 
         with async_timeout.timeout(REQUEST_TIMEOUT):
-            await hass.async_add_job(
-                cloud.auth.register, data["email"], data["password"]
-            )
+            await cloud.auth.async_register(data["email"], data["password"])
 
         return self.json_message("ok")
 
@@ -257,7 +255,7 @@ class CloudResendConfirmView(HomeAssistantView):
         cloud = hass.data[DOMAIN]
 
         with async_timeout.timeout(REQUEST_TIMEOUT):
-            await hass.async_add_job(cloud.auth.resend_email_confirm, data["email"])
+            await cloud.auth.async_resend_email_confirm(data["email"])
 
         return self.json_message("ok")
 
@@ -276,7 +274,7 @@ class CloudForgotPasswordView(HomeAssistantView):
         cloud = hass.data[DOMAIN]
 
         with async_timeout.timeout(REQUEST_TIMEOUT):
-            await hass.async_add_job(cloud.auth.forgot_password, data["email"])
+            await cloud.auth.async_forgot_password(data["email"])
 
         return self.json_message("ok")
 
@@ -336,7 +334,7 @@ async def websocket_subscription(hass, connection, msg):
     # In that case, let's refresh and reconnect
     if data.get("provider") and not cloud.is_connected:
         _LOGGER.debug("Found disconnected account with valid subscriotion, connecting")
-        await hass.async_add_executor_job(cloud.auth.renew_access_token)
+        await cloud.auth.async_renew_access_token()
 
         # Cancel reconnect in progress
         if cloud.iot.state != STATE_DISCONNECTED:
@@ -484,7 +482,7 @@ async def google_assistant_list(hass, connection, msg):
             {
                 "entity_id": entity.entity_id,
                 "traits": [trait.name for trait in entity.traits()],
-                "might_2fa": entity.might_2fa(),
+                "might_2fa": entity.might_2fa_traits(),
             }
         )
 
@@ -583,7 +581,7 @@ async def alexa_sync(hass, connection, msg):
             connection.send_error(
                 msg["id"],
                 "alexa_relink",
-                "Please go to the Alexa app and re-link the Home Assistant " "skill.",
+                "Please go to the Alexa app and re-link the Home Assistant skill.",
             )
             return
 

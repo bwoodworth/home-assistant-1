@@ -1,9 +1,9 @@
 """Test the default_config init."""
 from unittest.mock import patch
 
-from homeassistant.setup import async_setup_component
-
 import pytest
+
+from homeassistant.setup import async_setup_component
 
 from tests.common import MockDependency, mock_coro
 
@@ -34,4 +34,4 @@ def recorder_url_mock():
 
 async def test_setup(hass):
     """Test setup."""
-    assert await async_setup_component(hass, "default_config", {})
+    assert await async_setup_component(hass, "default_config", {"foo": "bar"})
